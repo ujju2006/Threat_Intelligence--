@@ -1,0 +1,38 @@
+[
+  {
+    "cve_id": "CVE-2023-34362",
+    "severity": "CRITICAL",
+    "cvss_score": 9.8,
+    "description": "SQL Injection vulnerability in MOVEit Transfer before 2023.0.1 allows unauthenticated attackers to gain unauthorized access to the database.",
+    "exploitation_risk": "Actively exploited in the wild by Cl0p ransomware gang.",
+    "mitigation": "Apply the vendor patch immediately. Disable HTTP/HTTPS access to MOVEit if patch cannot be applied.",
+    "learning_insight": "Zero-day SQL injections in file transfer appliances are highly sought after by ransomware groups for mass data exfiltration."
+  },
+  {
+    "cve_id": "CVE-2021-44228",
+    "severity": "CRITICAL",
+    "cvss_score": 10.0,
+    "description": "Log4Shell: Apache Log4j2 JNDI features do not protect against attacker-controlled LDAP and other JNDI related endpoints, leading to RCE.",
+    "exploitation_risk": "Ubiquitous exploitation across all sectors due to widespread Java logging library usage.",
+    "mitigation": "Update to Log4j 2.15.0 or later. Set log4j2.formatMsgNoLookups to true.",
+    "learning_insight": "A single vulnerability in an open-source transitive dependency can compromise millions of enterprise applications globally."
+  },
+  {
+    "cve_id": "CVE-2024-21412",
+    "severity": "HIGH",
+    "cvss_score": 8.1,
+    "description": "Internet Shortcut Files Security Feature Bypass Vulnerability.",
+    "exploitation_risk": "Used by APT groups (e.g., Water Hydra) to bypass Windows SmartScreen.",
+    "mitigation": "Apply the February 2024 Patch Tuesday updates from Microsoft.",
+    "learning_insight": "Attackers continuously evolve their phishing delivery mechanisms to evade built-in OS security controls like SmartScreen."
+  },
+  {
+    "cve_id": "CVE-2023-4966",
+    "severity": "CRITICAL",
+    "cvss_score": 9.4,
+    "description": "Citrix NetScaler ADC and Gateway Information Disclosure vulnerability (Citrix Bleed).",
+    "exploitation_risk": "Mass exploitation observed; allows attackers to hijack active authentication sessions.",
+    "mitigation": "Update firmware and proactively terminate all active user sessions on the appliance.",
+    "learning_insight": "Memory leakage vulnerabilities can completely bypass MFA by stealing the post-authentication session tokens directly."
+  }
+]

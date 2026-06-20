@@ -1,0 +1,470 @@
+{% extends "base.html" %}
+{% block title %}SOC Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- ── Page Header ─────────────────────────────────────── -->
+<div class="d-flex align-center justify-between mb-md" style="flex-wrap:wrap;gap:12px;">
+    <h2 style="font-size:18px;letter-spacing:1px;">
+        <i class="fa-solid fa-satellite-dish glow-text" style="margin-right:10px;"></i>
+        Global Threat Telemetry
+    </h2>
+    <div style="display:flex;gap:10px;">
+        <button class="badge low" style="cursor:pointer;padding:6px 14px;font-size:12px;" onclick="alert('Generating DOCX Report…')">
+            <i class="fa-solid fa-file-word"></i> Export DOCX
+        </button>
+        <button class="badge critical" style="cursor:pointer;padding:6px 14px;font-size:12px;" onclick="alert('Generating PDF Report…')">
+            <i class="fa-solid fa-file-pdf"></i> Export PDF
+        </button>
+    </div>
+</div>
+
+<!-- ── Metric Cards Row ────────────────────────────────── -->
+<div class="metric-cards">
+    <div class="glass-panel metric-card blue">
+        <div class="metric-label"><i class="fa-solid fa-shield-virus" style="margin-right:4px;"></i>Active IOCs</div>
+        <div class="metric-value glow-text" style="color:var(--accent-blue);">{{ total_iocs }}</div>
+    </div>
+    <div class="glass-panel metric-card purple">
+        <div class="metric-label"><i class="fa-solid fa-bug" style="margin-right:4px;"></i>Monitored CVEs</div>
+        <div class="metric-value glow-purple" style="color:var(--accent-purple);">{{ total_cves }}</div>
+    </div>
+    <div class="glass-panel metric-card red">
+        <div class="metric-label"><i class="fa-solid fa-circle-exclamation" style="margin-right:4px;"></i>Critical Alerts</div>
+        <div class="metric-value glow-crit" style="color:var(--sev-critical);">{{ critical_threats }}</div>
+    </div>
+    <div class="glass-panel metric-card green">
+        <div class="metric-label"><i class="fa-solid fa-heart-pulse" style="margin-right:4px;"></i>IOC Correlation Health</div>
+        <div class="metric-value" style="color:var(--accent-green);">98<span style="font-size:18px;">%</span></div>
+    </div>
+    <div class="glass-panel metric-card orange">
+        <div class="metric-label"><i class="fa-solid fa-rss" style="margin-right:4px;"></i>Avg Threat Score</div>
+        <div class="metric-value" style="color:var(--accent-orange);">7.4</div>
+    </div>
+</div>
+
+<!-- ── Global Threat Map (Offline SVG) ──────────────── -->
+<div class="glass-panel mb-md" style="padding-bottom:14px;">
+    <div class="d-flex align-center justify-between mb-sm">
+        <h4 class="mt-0">
+            <i class="fa-solid fa-earth-americas text-blue" style="margin-right:8px;"></i>
+            Global Threat Map
+            <span style="font-size:11px;color:var(--text-muted);font-family:'Rajdhani',sans-serif;margin-left:10px;font-weight:400;">
+                — Real-time attack origin telemetry
+            </span>
+        </h4>
+        <span class="badge critical" style="animation:blink 1.5s step-end infinite;">
+            <i class="fa-solid fa-circle" style="font-size:7px;"></i> LIVE
+        </span>
+    </div>
+    <!-- Self-contained SVG world map -->
+    <div id="threat-map" style="position:relative; width:100%; height:360px; background:#080f1e; border-radius:8px; overflow:hidden;">
+        <canvas id="threat-map-canvas" style="width:100%;height:100%;"></canvas>
+        <!-- Overlay labels -->
+        <div id="map-labels" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></div>
+    </div>
+</div>
+
+<!-- ── Charts + Learning Intelligence ────────────────── -->
+<div style="display:grid;grid-template-columns:1.8fr 1fr;gap:20px;margin-bottom:24px;">
+
+    <!-- Severity Chart -->
+    <div class="glass-panel">
+        <h4 class="mt-0 mb-sm">
+            <i class="fa-solid fa-chart-bar text-blue" style="margin-right:8px;"></i>
+            Threat Severity Distribution
+        </h4>
+        <canvas id="severityChart" height="130"></canvas>
+    </div>
+
+    <!-- Analyst Knowledge Base -->
+    <div class="glass-panel">
+        <h4 class="mt-0 mb-sm" style="color:var(--accent-purple);">
+            <i class="fa-solid fa-book-open-reader" style="margin-right:8px;"></i>
+            Analyst Knowledge Base
+        </h4>
+
+        <div class="insight-panel">
+            <div class="insight-title">
+                <i class="fa-solid fa-book-open"></i>
+                SOC Fundamentals
+            </div>
+            <p style="font-size:13px;line-height:1.65;color:var(--text-muted);margin-bottom:10px;">
+                ThreatFusion aggregates disparate IOC feeds (IPs, Hashes, URLs, CVEs) into a
+                <strong style="color:var(--text-main);">single pane of glass</strong> using
+                <strong style="color:var(--accent-blue);">deterministic rule-based correlation</strong>. This reduces
+                <strong style="color:var(--sev-high);">Analyst Fatigue</strong> and speeds up Mean Time To Respond
+                (MTTR) by matching indicators against known threat signatures and feed rules.
+            </p>
+            <div>
+                <span class="mitre-tag">T1190</span>
+                <span class="mitre-tag">T1071</span>
+                <span class="mitre-tag">TA0043</span>
+                <span class="mitre-tag">T1059</span>
+            </div>
+        </div>
+
+        <!-- Threat Feed Sync widget -->
+        <div style="margin-top:16px;padding:12px;background:rgba(56,189,248,0.05);border-radius:6px;border:1px solid rgba(56,189,248,0.15);">
+            <div style="font-family:'Rajdhani',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);margin-bottom:8px;">
+                <i class="fa-solid fa-rotate text-blue" style="margin-right:4px;"></i> Threat Feed Sync
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:12px;gap:8px;">
+                <span>AbuseIPDB <span style="color:var(--accent-green);">●</span></span>
+                <span>VirusTotal <span style="color:var(--accent-green);">●</span></span>
+                <span>Shodan <span style="color:var(--sev-medium);">●</span></span>
+                <span>NVD <span style="color:var(--accent-green);">●</span></span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Threat Attack Timeline ─────────────────────────── -->
+<div class="glass-panel mb-md">
+    <h4 class="mt-0 mb-sm">
+        <i class="fa-solid fa-timeline text-blue" style="margin-right:8px;"></i>
+        Threat Attack Lifecycle — MITRE ATT&CK Phases
+    </h4>
+    <div class="threat-timeline" id="attack-timeline">
+
+        <div class="tl-step">
+            <div class="tl-dot" style="border-color:var(--sev-critical);color:var(--sev-critical);box-shadow:0 0 10px rgba(244,63,94,0.5);">
+                <i class="fa-solid fa-eye"></i>
+            </div>
+            <div class="tl-label" style="color:var(--sev-critical);">Reconnaissance</div>
+        </div>
+
+        <div class="tl-step">
+            <div class="tl-dot" style="border-color:var(--sev-high);color:var(--sev-high);box-shadow:0 0 10px rgba(249,115,22,0.5);">
+                <i class="fa-solid fa-arrow-up-from-bracket"></i>
+            </div>
+            <div class="tl-label" style="color:var(--sev-high);">Weaponization</div>
+        </div>
+
+        <div class="tl-step">
+            <div class="tl-dot" style="border-color:var(--sev-medium);color:var(--sev-medium);box-shadow:0 0 10px rgba(234,179,8,0.5);">
+                <i class="fa-solid fa-envelope-open-text"></i>
+            </div>
+            <div class="tl-label" style="color:var(--sev-medium);">Delivery</div>
+        </div>
+
+        <div class="tl-step">
+            <div class="tl-dot" style="border-color:var(--accent-purple);color:var(--accent-purple);box-shadow:0 0 10px rgba(129,140,248,0.5);">
+                <i class="fa-solid fa-virus"></i>
+            </div>
+            <div class="tl-label" style="color:var(--accent-purple);">Exploitation</div>
+        </div>
+
+        <div class="tl-step">
+            <div class="tl-dot" style="border-color:var(--accent-blue);color:var(--accent-blue);box-shadow:0 0 10px rgba(56,189,248,0.5);">
+                <i class="fa-solid fa-plug"></i>
+            </div>
+            <div class="tl-label" style="color:var(--accent-blue);">C2 Install</div>
+        </div>
+
+        <div class="tl-step">
+            <div class="tl-dot" style="border-color:var(--accent-green);color:var(--accent-green);box-shadow:0 0 10px rgba(52,211,153,0.5);">
+                <i class="fa-solid fa-database"></i>
+            </div>
+            <div class="tl-label" style="color:var(--accent-green);">Harvesting</div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+/* ── Offline Canvas World Map ────────────────────────────── */
+(function() {
+    const canvas = document.getElementById('threat-map-canvas');
+    const labelsDiv = document.getElementById('map-labels');
+    function resize() {
+        canvas.width  = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+    }
+    resize();
+    window.addEventListener('resize', () => { resize(); drawMap(); });
+
+    const ctx = canvas.getContext('2d');
+
+    // Attack data with approx mercator positions (0-1 normalized)
+    const attacks = [
+        { x:0.598, y:0.265, label:'Moscow, RU',       type:'APT29 C2',         sev:'CRITICAL' },
+        { x:0.793, y:0.335, label:'Beijing, CN',       type:'Phishing Cluster', sev:'HIGH'     },
+        { x:0.859, y:0.360, label:'Tokyo, JP',         type:'Botnet Egress',    sev:'MEDIUM'   },
+        { x:0.508, y:0.245, label:'London, UK',        type:'IOC Match',        sev:'LOW'      },
+        { x:0.135, y:0.330, label:'San Francisco, US', type:'Ransomware Beacon',sev:'HIGH'     },
+        { x:0.295, y:0.555, label:'São Paulo, BR',     type:'DDoS Source',      sev:'MEDIUM'   },
+        { x:0.700, y:0.365, label:'New Delhi, IN',     type:'Credential Spray', sev:'HIGH'     },
+        { x:0.800, y:0.475, label:'Singapore, SG',     type:'Port Scan',        sev:'LOW'      },
+        { x:0.512, y:0.258, label:'Paris, FR',         type:'TOR Exit',         sev:'CRITICAL' },
+        { x:0.855, y:0.600, label:'Sydney, AU',        type:'Malware C2 Ping',  sev:'MEDIUM'   },
+    ];
+
+    const sevColor = { CRITICAL:'#f43f5e', HIGH:'#f97316', MEDIUM:'#eab308', LOW:'#3b82f6' };
+    const paths = [[0,8],[1,2],[6,7],[4,5],[9,7]];
+    let tick = 0;
+
+    function px(a) {
+        return { x: a.x * canvas.width, y: a.y * canvas.height };
+    }
+
+    function drawMap() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Dark ocean background
+        ctx.fillStyle = '#06101f';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Subtle grid
+        ctx.strokeStyle = 'rgba(56,189,248,0.05)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += canvas.width/12) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += canvas.height/6) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+        }
+
+        // Draw continent outlines (simplified)
+        ctx.strokeStyle = 'rgba(56,189,248,0.18)';
+        ctx.fillStyle   = 'rgba(56,189,248,0.04)';
+        ctx.lineWidth   = 1;
+
+        // N America
+        ctx.beginPath();
+        ctx.moveTo(canvas.width*0.08, canvas.height*0.18);
+        ctx.lineTo(canvas.width*0.08, canvas.height*0.22);
+        ctx.lineTo(canvas.width*0.05, canvas.height*0.30);
+        ctx.lineTo(canvas.width*0.10, canvas.height*0.28);
+        ctx.lineTo(canvas.width*0.20, canvas.height*0.50);
+        ctx.lineTo(canvas.width*0.25, canvas.height*0.50);
+        ctx.lineTo(canvas.width*0.27, canvas.height*0.38);
+        ctx.lineTo(canvas.width*0.22, canvas.height*0.32);
+        ctx.lineTo(canvas.width*0.25, canvas.height*0.19);
+        ctx.lineTo(canvas.width*0.22, canvas.height*0.13);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        // S America
+        ctx.beginPath();
+        ctx.moveTo(canvas.width*0.22, canvas.height*0.53);
+        ctx.lineTo(canvas.width*0.23, canvas.height*0.50);
+        ctx.lineTo(canvas.width*0.30, canvas.height*0.50);
+        ctx.lineTo(canvas.width*0.33, canvas.height*0.60);
+        ctx.lineTo(canvas.width*0.30, canvas.height*0.75);
+        ctx.lineTo(canvas.width*0.26, canvas.height*0.78);
+        ctx.lineTo(canvas.width*0.23, canvas.height*0.70);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        // Europe
+        ctx.beginPath();
+        ctx.moveTo(canvas.width*0.46, canvas.height*0.18);
+        ctx.lineTo(canvas.width*0.50, canvas.height*0.15);
+        ctx.lineTo(canvas.width*0.56, canvas.height*0.17);
+        ctx.lineTo(canvas.width*0.58, canvas.height*0.25);
+        ctx.lineTo(canvas.width*0.54, canvas.height*0.30);
+        ctx.lineTo(canvas.width*0.50, canvas.height*0.30);
+        ctx.lineTo(canvas.width*0.46, canvas.height*0.25);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        // Africa
+        ctx.beginPath();
+        ctx.moveTo(canvas.width*0.48, canvas.height*0.32);
+        ctx.lineTo(canvas.width*0.55, canvas.height*0.30);
+        ctx.lineTo(canvas.width*0.60, canvas.height*0.38);
+        ctx.lineTo(canvas.width*0.60, canvas.height*0.55);
+        ctx.lineTo(canvas.width*0.55, canvas.height*0.65);
+        ctx.lineTo(canvas.width*0.50, canvas.height*0.63);
+        ctx.lineTo(canvas.width*0.46, canvas.height*0.50);
+        ctx.lineTo(canvas.width*0.46, canvas.height*0.38);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        // Asia
+        ctx.beginPath();
+        ctx.moveTo(canvas.width*0.58, canvas.height*0.17);
+        ctx.lineTo(canvas.width*0.70, canvas.height*0.15);
+        ctx.lineTo(canvas.width*0.88, canvas.height*0.18);
+        ctx.lineTo(canvas.width*0.90, canvas.height*0.30);
+        ctx.lineTo(canvas.width*0.85, canvas.height*0.40);
+        ctx.lineTo(canvas.width*0.80, canvas.height*0.45);
+        ctx.lineTo(canvas.width*0.72, canvas.height*0.42);
+        ctx.lineTo(canvas.width*0.65, canvas.height*0.38);
+        ctx.lineTo(canvas.width*0.60, canvas.height*0.30);
+        ctx.lineTo(canvas.width*0.58, canvas.height*0.25);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        // Australia
+        ctx.beginPath();
+        ctx.moveTo(canvas.width*0.80, canvas.height*0.55);
+        ctx.lineTo(canvas.width*0.91, canvas.height*0.53);
+        ctx.lineTo(canvas.width*0.94, canvas.height*0.62);
+        ctx.lineTo(canvas.width*0.88, canvas.height*0.68);
+        ctx.lineTo(canvas.width*0.80, canvas.height*0.65);
+        ctx.closePath();
+        ctx.fill(); ctx.stroke();
+
+        // Draw attack paths with animated dash
+        paths.forEach((pair, i) => {
+            const a = px(attacks[pair[0]]);
+            const b = px(attacks[pair[1]]);
+            const colors = ['#f43f5e','#f97316','#818cf8','#38bdf8','#34d399'];
+            ctx.save();
+            ctx.strokeStyle = colors[i % colors.length];
+            ctx.lineWidth = 1.5;
+            ctx.globalAlpha = 0.5;
+            ctx.setLineDash([8, 10]);
+            ctx.lineDashOffset = -(tick * 0.5);
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            // Bezier curve for nicer arc
+            const mx = (a.x + b.x) / 2;
+            const my = Math.min(a.y, b.y) - canvas.height * 0.12;
+            ctx.quadraticCurveTo(mx, my, b.x, b.y);
+            ctx.stroke();
+            ctx.restore();
+        });
+
+        // Draw attack markers with pulse
+        attacks.forEach(a => {
+            const p = px(a);
+            const color = sevColor[a.sev];
+            const pulse = Math.abs(Math.sin(tick * 0.04)) * 14;
+
+            // Outer pulse ring
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 6 + pulse, 0, Math.PI * 2);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.25 - pulse * 0.015;
+            ctx.stroke();
+            ctx.restore();
+
+            // Inner dot
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 10;
+            ctx.globalAlpha = 0.9;
+            ctx.fill();
+            ctx.restore();
+        });
+
+        tick++;
+        requestAnimationFrame(drawMap);
+    }
+
+    drawMap();
+
+    // Add hover labels
+    canvas.addEventListener('mousemove', function(e) {
+        const rect = canvas.getBoundingClientRect();
+        const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+        const my = (e.clientY - rect.top)  * (canvas.height / rect.height);
+        labelsDiv.innerHTML = '';
+        attacks.forEach(a => {
+            const p = px(a);
+            const d = Math.hypot(mx - p.x, my - p.y);
+            if (d < 18) {
+                const color = sevColor[a.sev];
+                const lx = (p.x / canvas.width) * 100;
+                const ly = (p.y / canvas.height) * 100;
+                labelsDiv.innerHTML = `<div style="position:absolute;left:${lx}%;top:${ly}%;transform:translate(-50%,-130%);background:rgba(6,11,20,0.95);border:1px solid ${color};border-radius:6px;padding:7px 12px;font-family:'Inter',sans-serif;pointer-events:none;min-width:160px;z-index:10;box-shadow:0 0 14px ${color}44;">
+                    <div style="font-family:'Orbitron',sans-serif;font-size:10px;color:#38bdf8;margin-bottom:3px;">${a.label}</div>
+                    <div style="color:#e2e8f0;font-size:12px;font-weight:600;">${a.type}</div>
+                    <div style="margin-top:5px;"><span style="padding:2px 8px;border-radius:3px;font-size:10px;font-family:'Rajdhani',sans-serif;font-weight:700;background:${color}22;color:${color};border:1px solid ${color};">${a.sev}</span></div>
+                </div>`;
+            }
+        });
+    });
+    canvas.addEventListener('mouseleave', () => { labelsDiv.innerHTML = ''; });
+})();
+
+/* ── Severity Chart ──────────────────────────────────────── */
+window.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/iocs')
+        .then(r => r.json())
+        .then(iocs => {
+            let counts = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
+            iocs.forEach(ioc => {
+                if (counts[ioc.severity] !== undefined) counts[ioc.severity]++;
+            });
+
+            const canvas = document.getElementById('severityChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            const makeGrad = (top, bottom) => {
+                const g = ctx.createLinearGradient(0, 0, 0, 260);
+                g.addColorStop(0, top);
+                g.addColorStop(1, bottom);
+                return g;
+            };
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'],
+                    datasets: [{
+                        label: 'Threat Count',
+                        data: [counts.CRITICAL, counts.HIGH, counts.MEDIUM, counts.LOW],
+                        backgroundColor: [
+                            makeGrad('rgba(244,63,94,0.85)',  'rgba(244,63,94,0.1)'),
+                            makeGrad('rgba(249,115,22,0.85)', 'rgba(249,115,22,0.1)'),
+                            makeGrad('rgba(234,179,8,0.85)',  'rgba(234,179,8,0.1)'),
+                            makeGrad('rgba(59,130,246,0.85)', 'rgba(59,130,246,0.1)')
+                        ],
+                        borderColor: ['#f43f5e','#f97316','#eab308','#3b82f6'],
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    animation: { duration: 1200, easing: 'easeInOutQuart' },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(6,11,20,0.95)',
+                            borderColor: '#38bdf8',
+                            borderWidth: 1,
+                            titleFont: { family: 'Orbitron', size: 11 },
+                            bodyFont:  { family: 'Rajdhani', size: 14 },
+                            padding: 12,
+                            callbacks: {
+                                label: ctx => `  ${ctx.parsed.y} threats detected`
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(56,189,248,0.06)', lineWidth: 1 },
+                            ticks: { color: '#7a90b0', font: { family: 'Rajdhani', size: 12 } },
+                            border: { color: 'transparent' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { color: '#7a90b0', font: { family: 'Rajdhani', size: 12, weight: '700' } },
+                            border: { color: 'transparent' }
+                        }
+                    }
+                }
+            });
+        })
+        .catch(err => console.error('Chart load error:', err));
+});
+</script>
+{% endblock %}
+

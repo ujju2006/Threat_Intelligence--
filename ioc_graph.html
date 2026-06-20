@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+{% block title %}IOC Correlation Graph{% endblock %}
+
+{% block content %}
+
+<!-- vis-network -->
+<script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+<!-- ── Page Header ─────────────────────────────────────── -->
+<div class="d-flex align-center justify-between mb-md" style="flex-wrap:wrap;gap:12px;">
+    <div>
+        <h2 style="font-size:18px;letter-spacing:1px;margin-bottom:4px;">
+            <i class="fa-solid fa-diagram-project glow-text" style="margin-right:10px;"></i>
+            Threat Relationship Analysis
+        </h2>
+        <div style="font-family:'Rajdhani',sans-serif;font-size:13px;color:var(--text-muted);letter-spacing:0.5px;">
+            IOC Correlation Engine — Digital Forensics Console
+        </div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+        <span class="badge critical" style="animation:blink 1.5s step-end infinite;">
+            <i class="fa-solid fa-circle" style="font-size:7px;"></i> LIVE GRAPH
+        </span>
+        <button class="badge low" style="cursor:pointer;padding:6px 14px;font-size:12px;" id="btn-reset-graph">
+            <i class="fa-solid fa-rotate-right"></i> Reset View
+        </button>
+        <button class="badge medium" style="cursor:pointer;padding:6px 14px;font-size:12px;" id="btn-fit-graph">
+            <i class="fa-solid fa-expand"></i> Fit All
+        </button>
+    </div>
+</div>
+
+<!-- ── Threat Attack Timeline (mini, for IOC view) ─────── -->
+<div class="glass-panel mb-md" style="padding:14px 20px;">
+    <div style="font-family:'Rajdhani',sans-serif;font-size:11px;text-transform:uppercase;letter-spacing:1.2px;color:var(--text-muted);margin-bottom:10px;">
+        <i class="fa-solid fa-timeline text-blue" style="margin-right:6px;"></i>
+        Attack Chain Phases — Forensic Timeline
+    </div>
+    <div class="threat-timeline" style="padding:8px 0;">
+        <div class="tl-step">
+            <div class="tl-dot" style="border-color:var(--sev-critical);color:var(--sev-critical);width:30px;height:30px;font-size:12px;">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+            <div class="tl-label" style="color:var(--sev-critical);font-size:10px;">Recon</div>
+        </div>
+        <div class="tl-step">
+            <div class="tl-dot" style="border-color:var(--sev-high);color:var(--sev-high);width:30px;height:30px;font-size:12px;">
+                <i class="fa-solid fa-file-code"></i>
+            </div>
+            <div class="tl-label" style="color:var(--sev-high);font-size:10px;">Delivery</div>
+        </div>
+        <div class="tl-step">
+            <div class="tl-dot" style="border-color:var(--sev-medium);color:var(--sev-medium);width:30px;height:30px;font-size:12px;">
+                <i class="fa-solid fa-lock-open"></i>
+            </div>
+            <div class="tl-label" style="color:var(--sev-medium);font-size:10px;">Exploit</div>
+        </div>
+        <div class="tl-step">
+            <div class="tl-dot" style="border-color:var(--accent-purple);color:var(--accent-purple);width:30px;height:30px;font-size:12px;">
+                <i class="fa-solid fa-plug-circle-bolt"></i>
+            </div>
+            <div class="tl-label" style="color:var(--accent-purple);font-size:10px;">C2 Beacon</div>
+        </div>
+        <div class="tl-step">
+            <div class="tl-dot" style="border-color:var(--accent-blue);color:var(--accent-blue);width:30px;height:30px;font-size:12px;">
+                <i class="fa-solid fa-copy"></i>
+            </div>
+            <div class="tl-label" style="color:var(--accent-blue);font-size:10px;">Exfiltration</div>
+        </div>
+        <div class="tl-step">
+            <div class="tl-dot" style="border-color:var(--accent-green);color:var(--accent-green);width:30px;height:30px;font-size:12px;">
+                <i class="fa-solid fa-check-double"></i>
+            </div>
+            <div class="tl-label" style="color:var(--accent-green);font-size:10px;">Remediated</div>
+        </div>
+    </div>
+</div>
+
+<!-- ── Graph + Intel Panel ─────────────────────────────── -->
+<div style="display:grid;grid-template-columns:1.8fr 1fr;gap:20px;">
+
+    <!-- Network Graph -->
+    <div class="glass-panel" style="padding:0;overflow:hidden;min-height:580px;position:relative;">
+        <!-- graph header bar -->
+        <div style="padding:12px 18px;border-bottom:1px solid var(--border-color);display:flex;align-items:center;justify-content:space-between;">
+            <span style="font-family:'Rajdhani',sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted);">
+                <i class="fa-solid fa-circle-nodes" style="color:var(--accent-blue);margin-right:6px;"></i>
+                IOC Relationship Graph
+            </span>
+            <div style="display:flex;gap:12px;font-size:11px;font-family:'Rajdhani',sans-serif;color:var(--text-muted);">
+                <span><span style="color:var(--sev-critical);">●</span> Critical</span>
+                <span><span style="color:var(--sev-high);">●</span> High</span>
+                <span><span style="color:var(--sev-medium);">●</span> Medium</span>
+                <span><span style="color:var(--sev-low);">●</span> Low</span>
+            </div>
+        </div>
+        <div id="mynetwork" style="width:100%;height:530px;outline:none;"></div>
+    </div>
+
+    <!-- Intel Panel -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+        <!-- Selected Node Intel -->
+        <div class="glass-panel" style="flex:1;max-height:280px;overflow-y:auto;">
+            <h4 class="mt-0" style="margin-bottom:14px;display:flex;align-items:center;gap:8px;">
+                <i class="fa-solid fa-crosshairs" style="color:var(--sev-critical);"></i>
+                Selected Node Intel
+            </h4>
+            <div id="node-intel" style="font-size:13px;color:var(--text-muted);line-height:1.7;">
+                <div style="text-align:center;padding:20px 0;opacity:0.5;">
+                    <i class="fa-solid fa-arrow-pointer" style="font-size:24px;display:block;margin-bottom:8px;"></i>
+                    Click a node in the graph to inspect its threat intelligence data.
+                </div>
+            </div>
+        </div>
+
+        <!-- Forensic Investigation Console -->
+        <div class="glass-panel">
+            <h4 class="mt-0" style="color:var(--accent-purple);margin-bottom:12px;">
+                <i class="fa-solid fa-microscope" style="margin-right:8px;"></i>
+                Forensic Investigation Console
+            </h4>
+
+            <!-- Report modal simulation: severity header -->
+            <div style="padding:10px 14px;background:rgba(244,63,94,0.08);border-radius:6px;border:1px solid rgba(244,63,94,0.25);margin-bottom:12px;">
+                <div style="font-family:'Orbitron',sans-serif;font-size:11px;color:var(--sev-critical);letter-spacing:1px;margin-bottom:4px;">
+                    <i class="fa-solid fa-triangle-exclamation"></i> CRITICAL SEVERITY INDICATOR
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);">
+                    Multi-vector attack pattern detected across correlated IOC cluster. Recommend immediate isolation.
+                </div>
+                <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;">
+                    <span class="mitre-tag">T1566</span>
+                    <span class="mitre-tag">T1059.001</span>
+                    <span class="mitre-tag">TA0011</span>
+                </div>
+            </div>
+
+            <div class="insight-panel" style="margin-top:0;">
+                <div class="insight-title">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    Learning Insight — APT Attack Chains
+                </div>
+                <p style="font-size:12px;line-height:1.65;color:var(--text-muted);margin-bottom:10px;">
+                    Advanced Persistent Threats (APTs) rarely use a single vector. An
+                    <strong style="color:var(--text-main);">Attack Chain</strong> typically spans multiple IOCs:
+                    a phishing URL delivers a malicious Hash, which beacons to a C2 IP. Graphing these relationships
+                    allows defenders to block entire threat infrastructure simultaneously.
+                </p>
+                <div>
+                    <span class="mitre-tag">T1566</span>
+                    <span class="mitre-tag">T1071</span>
+                    <span class="mitre-tag">T1190</span>
+                    <span class="mitre-tag">TA0040</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    let networkInstance = null;
+
+    fetch('/api/iocs')
+        .then(r => r.json())
+        .then(iocs => {
+            let nodes = new vis.DataSet();
+            let edges = new vis.DataSet();
+            let addedNodes = new Set();
+
+            const colors = {
+                'CRITICAL': '#F43F5E',
+                'HIGH':     '#F97316',
+                'MEDIUM':   '#EAB308',
+                'LOW':      '#3B82F6'
+            };
+
+            iocs.forEach(ioc => {
+                if (!addedNodes.has(ioc.ioc_id)) {
+                    nodes.add({
+                        id: ioc.ioc_id,
+                        label: ioc.type + '\n' + ioc.value,
+                        color: {
+                            background: 'rgba(10,18,35,0.95)',
+                            border: colors[ioc.severity] || '#38BDF8',
+                            highlight: { background: 'rgba(56,189,248,0.15)', border: '#38BDF8' }
+                        },
+                        font:  { color: '#E2E8F0', face: 'Rajdhani', size: 13, bold: { color: '#E2E8F0' } },
+                        shape: 'box',
+                        borderWidth: 2,
+                        borderWidthSelected: 3,
+                        shadow: { enabled: true, color: colors[ioc.severity] || '#38BDF8', size: 14, x: 0, y: 0 },
+                        _raw: ioc
+                    });
+                    addedNodes.add(ioc.ioc_id);
+                }
+
+                if (ioc.relationships) {
+                    ioc.relationships.forEach(rel => {
+                        if (!addedNodes.has(rel)) {
+                            nodes.add({
+                                id: rel,
+                                label: rel,
+                                color: { background: 'rgba(10,18,35,0.6)', border: '#4a6080' },
+                                font:  { color: '#7a90b0', face: 'Rajdhani', size: 12 },
+                                shape: 'box'
+                            });
+                            addedNodes.add(rel);
+                        }
+                        edges.add({
+                            from: ioc.ioc_id,
+                            to: rel,
+                            color: { color: '#1a2640', highlight: '#38BDF8', hover: '#818CF8' },
+                            arrows: 'to',
+                            smooth: { type: 'curvedCW', roundness: 0.15 },
+                            width: 1.5
+                        });
+                    });
+                }
+            });
+
+            const container = document.getElementById('mynetwork');
+            const data      = { nodes, edges };
+            const options   = {
+                physics: {
+                    enabled: true,
+                    stabilization: { iterations: 150 },
+                    barnesHut: { springLength: 220, damping: 0.09 }
+                },
+                interaction: { hover: true, navigationButtons: false, tooltipDelay: 200 },
+                edges: { smooth: { enabled: true } }
+            };
+
+            networkInstance = new vis.Network(container, data, options);
+
+            networkInstance.on('click', function(params) {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    const node   = nodes.get(nodeId);
+                    const c      = node.color.border;
+
+                    let html = `<div style="font-family:'Orbitron',sans-serif;font-size:12px;color:${c};margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--border-color);">
+                                    ${nodeId}
+                                </div>`;
+
+                    if (node._raw) {
+                        const raw = node._raw;
+                        html += `
+                        <div style="display:grid;grid-template-columns:auto 1fr;gap:6px 12px;font-size:12px;">
+                            <span style="color:var(--text-muted);">Type</span>
+                            <span style="color:var(--text-main);">${raw.type}</span>
+
+                            <span style="color:var(--text-muted);">Value</span>
+                            <span style="font-family:monospace;color:var(--accent-blue);word-break:break-all;">${raw.value}</span>
+
+                            <span style="color:var(--text-muted);">Severity</span>
+                            <span><span class="badge ${raw.severity.toLowerCase()}">${raw.severity}</span></span>
+                        </div>`;
+
+                        if (raw.behavior) {
+                            html += `<div style="margin-top:10px;font-size:12px;padding:8px;background:rgba(56,189,248,0.05);border-radius:4px;border-left:2px solid var(--accent-blue);">
+                                        <strong style="color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;">Behavior</strong><br>
+                                        <span style="color:var(--text-main);">${raw.behavior}</span>
+                                     </div>`;
+                        }
+
+                        if (raw.timeline) {
+                            html += `<div style="margin-top:10px;">
+                                        <strong style="color:var(--text-muted);font-size:10px;text-transform:uppercase;letter-spacing:1px;font-family:'Rajdhani',sans-serif;">Threat Timeline</strong>
+                                        <ul style="padding-left:16px;margin-top:8px;font-size:12px;">`;
+                            raw.timeline.forEach(t => {
+                                html += `<li style="margin-bottom:6px;">
+                                            <span style="color:var(--accent-blue);font-family:'Rajdhani',sans-serif;">[${t.time}]</span>
+                                            <span style="color:var(--text-main);"> ${t.event}</span>
+                                         </li>`;
+                            });
+                            html += `</ul></div>`;
+                        }
+                    } else {
+                        html += `<p style="color:var(--text-muted);font-size:12px;">External correlated entity — no direct telemetry available in this session.</p>`;
+                    }
+
+                    document.getElementById('node-intel').innerHTML = html;
+                }
+            });
+
+            // Button controls
+            document.getElementById('btn-reset-graph').onclick = () =>
+                networkInstance.setOptions({ physics: { enabled: true } });
+            document.getElementById('btn-fit-graph').onclick = () =>
+                networkInstance.fit({ animation: { duration: 600, easingFunction: 'easeInOutQuad' } });
+        });
+</script>
+
+{% endblock %}

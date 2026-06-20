@@ -1,0 +1,49 @@
+[
+  {
+    "ioc_id": "IOC-IP-992",
+    "type": "IP",
+    "value": "185.46.224.239",
+    "severity": "CRITICAL",
+    "reputation": "Malicious",
+    "country": "Russia",
+    "asn": "AS49505",
+    "behavior": "High-velocity credential stuffing against /login.",
+    "timeline": [
+      {"time": "08:15", "event": "Reconnaissance (Port Scan)"},
+      {"time": "08:45", "event": "Credential Harvesting (Brute Force)"},
+      {"time": "08:47", "event": "Blocked by Rate Limiter"}
+    ],
+    "relationships": ["URL-LOGIN-01", "MITRE-T1110"],
+    "learning_insight": "IP addresses associated with bulletproof hosting providers are frequently recycled for botnet and brute-force campaigns."
+  },
+  {
+    "ioc_id": "IOC-URL-404",
+    "type": "URL",
+    "value": "http://secure-login-update.com/owa/auth",
+    "severity": "HIGH",
+    "reputation": "Suspicious",
+    "behavior": "Phishing page mimicking Outlook Web Access.",
+    "timeline": [
+      {"time": "14:20", "event": "Phishing Email Delivery"},
+      {"time": "15:05", "event": "User Clicked Link"},
+      {"time": "15:10", "event": "Credential Submitted"}
+    ],
+    "relationships": ["IP-45.33.22.11", "MITRE-T1566"],
+    "learning_insight": "Phishing domains often use typosquatting or visually similar characters to deceive users checking the URL bar."
+  },
+  {
+    "ioc_id": "IOC-HASH-771",
+    "type": "HASH",
+    "value": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "severity": "CRITICAL",
+    "reputation": "Malicious",
+    "behavior": "Ransomware payload (Cl0p variant).",
+    "timeline": [
+      {"time": "11:00", "event": "File Dropped via MOVEit Exploit"},
+      {"time": "11:05", "event": "Execution and Encryption Started"},
+      {"time": "11:30", "event": "Ransom Note Generated"}
+    ],
+    "relationships": ["CVE-2023-34362", "MITRE-T1059"],
+    "learning_insight": "Hashes provide precise identification of known malware binaries, though attackers can easily bypass them by recompiling the code."
+  }
+]

@@ -1,0 +1,30 @@
+[
+  {
+    "tactic": "Initial Access",
+    "technique_id": "T1566",
+    "technique_name": "Phishing",
+    "description": "Adversaries may send phishing messages to gain access to victim systems.",
+    "learning_insight": "Phishing remains the most reliable initial access vector because it exploits human psychology rather than technical flaws."
+  },
+  {
+    "tactic": "Credential Access",
+    "technique_id": "T1110",
+    "technique_name": "Brute Force",
+    "description": "Adversaries may use brute force techniques to attempt access to accounts when passwords are unknown.",
+    "learning_insight": "Brute force and volumetric attacks rely on high-frequency automated requests to overwhelm authentication or system resources."
+  },
+  {
+    "tactic": "Execution",
+    "technique_id": "T1059",
+    "technique_name": "Command and Scripting Interpreter",
+    "description": "Adversaries may abuse command and script interpreters to execute commands, scripts, or binaries.",
+    "learning_insight": "Fileless malware heavily relies on built-in OS interpreters like PowerShell or bash to evade signature-based antivirus."
+  },
+  {
+    "tactic": "Defense Evasion",
+    "technique_id": "T1070",
+    "technique_name": "Indicator Removal",
+    "description": "Adversaries may delete or modify artifacts generated within systems to remove evidence of their presence or hinder defenses.",
+    "learning_insight": "Advanced attackers often delete Windows Event Logs or alter bash_history immediately upon gaining root access."
+  }
+]

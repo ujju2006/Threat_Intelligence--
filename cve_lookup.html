@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}CVE Intelligence{% endblock %}
+
+{% block content %}
+<!-- ── Page Header ─────────────────────────────────────── -->
+<div class="d-flex align-center justify-between mb-md">
+    <h2 style="font-size:18px;letter-spacing:1px;">
+        <i class="fa-solid fa-bug glow-text" style="margin-right:10px;"></i>
+        CVE Intelligence Database
+    </h2>
+    <div class="d-flex gap-sm">
+        <span class="badge low" style="text-transform:none; font-family:'Inter', sans-serif;">Source: NIST NVD</span>
+        <button class="badge low" style="cursor:pointer; border:none; background:var(--accent-purple); color:white;">
+            <i class="fa-solid fa-sync"></i> Refresh Data
+        </button>
+    </div>
+</div>
+
+<!-- ── CVE Table ──────────────────────────────────────── -->
+<div class="glass-panel animate-fade-up" style="padding:0; overflow:hidden;">
+    <div style="overflow-x:auto;">
+        <table style="width:100%; text-align:left; border-collapse:collapse; min-width:800px;">
+            <thead>
+                <tr style="background:rgba(56,189,248,0.05); border-bottom:1px solid var(--border-color);">
+                    <th style="padding:15px; font-family:'Rajdhani',sans-serif; text-transform:uppercase; font-size:11px; letter-spacing:1px; color:var(--accent-blue);">CVE ID</th>
+                    <th style="padding:15px; font-family:'Rajdhani',sans-serif; text-transform:uppercase; font-size:11px; letter-spacing:1px; color:var(--accent-blue);">Severity Indicator</th>
+                    <th style="padding:15px; font-family:'Rajdhani',sans-serif; text-transform:uppercase; font-size:11px; letter-spacing:1px; color:var(--accent-blue);">CVSS Score</th>
+                    <th style="padding:15px; font-family:'Rajdhani',sans-serif; text-transform:uppercase; font-size:11px; letter-spacing:1px; color:var(--accent-blue);">Intelligence Summary</th>
+                    <th style="padding:15px; font-family:'Rajdhani',sans-serif; text-transform:uppercase; font-size:11px; letter-spacing:1px; color:var(--accent-blue);">Console Actions</th>
+                </tr>
+            </thead>
+            <tbody id="cve-table-body">
+                <!-- Populated via JS -->
+            </tbody>
+        </table>
+    </div>
+</div>
+<!-- ── Forensic Detail Modal ─────────────────────────── -->
+<div class="modal-overlay" id="cve-modal-overlay">
+    <div class="modal-container">
+        <div class="modal-header">
+            <h3 id="modal-cve-id" style="color:var(--accent-blue); font-size:20px;">CVE-XXXX-XXXX</h3>
+            <i class="fa-solid fa-xmark modal-close" onclick="closeModal()"></i>
+        </div>
+        <div class="modal-body">
+            <div class="d-flex gap-sm mb-md align-center">
+                <span id="modal-severity" class="badge">SEVERITY</span>
+                <span style="color:var(--text-muted);">|</span>
+                <span style="font-family:'Orbitron', sans-serif; color:white;">CVSS Score: <span id="modal-cvss" class="text-blue">0.0</span></span>
+            </div>
+
+            <div class="mb-md">
+                <label style="display:block; font-family:'Rajdhani', sans-serif; font-weight:700; color:var(--accent-cyan); text-transform:uppercase; font-size:11px; margin-bottom:6px;">Intelligence Summary</label>
+                <p id="modal-description" style="font-size:14px; line-height:1.6; color:var(--text-main);"></p>
+            </div>
+
+            <div class="mb-md glass-panel" style="background:rgba(244, 63, 94, 0.05); border-color:rgba(244, 63, 94, 0.2);">
+                <label style="display:block; font-family:'Rajdhani', sans-serif; font-weight:700; color:var(--sev-critical); text-transform:uppercase; font-size:11px; margin-bottom:6px;">
+                    <i class="fa-solid fa-skull-crossbones"></i> Exploitation Risk
+                </label>
+                <p id="modal-risk" style="font-size:13px; color:var(--text-main);"></p>
+            </div>
+
+            <div class="mb-md">
+                <label style="display:block; font-family:'Rajdhani', sans-serif; font-weight:700; color:var(--accent-green); text-transform:uppercase; font-size:11px; margin-bottom:6px;">Recommended Mitigation</label>
+                <div class="insight-panel" style="margin-top:0; border-color:var(--accent-green); background:rgba(52, 211, 153, 0.05);">
+                    <p id="modal-mitigation" style="font-size:13px; color:var(--text-main);"></p>
+                </div>
+            </div>
+
+            <div class="insight-panel">
+                <div class="insight-title"><i class="fa-solid fa-lightbulb"></i> Forensic Insight</div>
+                <p id="modal-insight" style="font-size:13px; color:var(--text-muted); font-style:italic;"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let cveData = [];
+
+    function openModal(cveId) {
+        const cve = cveData.find(c => c.cve_id === cveId);
+        if (!cve) return;
+
+        document.getElementById('modal-cve-id').textContent = cve.cve_id;
+        document.getElementById('modal-severity').textContent = cve.severity;
+        document.getElementById('modal-severity').className = `badge ${cve.severity.toLowerCase()}`;
+        document.getElementById('modal-cvss').textContent = cve.cvss_score;
+        document.getElementById('modal-description').textContent = cve.description;
+        document.getElementById('modal-risk').textContent = cve.exploitation_risk;
+        document.getElementById('modal-mitigation').textContent = cve.mitigation;
+        document.getElementById('modal-insight').textContent = cve.learning_insight;
+
+        document.getElementById('cve-modal-overlay').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('cve-modal-overlay').classList.remove('active');
+    }
+
+    // Close on click outside
+    document.getElementById('cve-modal-overlay').addEventListener('click', function(e) {
+        if (e.target === this) closeModal();
+    });
+
+    fetch('/api/cves')
+        .then(r => r.json())
+        .then(cves => {
+            cveData = cves;
+            let html = '';
+            cves.forEach(cve => {
+                html += `
+                <tr id="row-${cve.cve_id}" style="border-bottom:1px solid var(--border-color); transition:background 0.2s;" onmouseover="this.style.background='rgba(56,189,248,0.03)'" onmouseout="this.style.background='transparent'">
+                    <td style="padding:15px;">
+                        <div style="font-family:'Orbitron',sans-serif; font-size:12px; color:white;">${cve.cve_id}</div>
+                    </td>
+                    <td style="padding:15px;">
+                        <span class="badge ${cve.severity.toLowerCase()}">${cve.severity}</span>
+                    </td>
+                    <td style="padding:15px;">
+                        <span style="font-family:'Rajdhani',sans-serif; font-size:16px; font-weight:700; color:${parseFloat(cve.cvss_score) >= 7 ? 'var(--sev-critical)' : 'var(--text-main)'};">${cve.cvss_score}</span>
+                    </td>
+                    <td style="padding:15px;">
+                        <div style="color:var(--text-muted); font-size:13px; line-height:1.5; max-width:400px;">${cve.description}</div>
+                    </td>
+                    <td style="padding:15px;">
+                        <button class="badge low" style="cursor:pointer; padding:6px 12px; font-size:11px;" onclick="openModal('${cve.cve_id}')">
+                            <i class="fa-solid fa-eye" style="margin-right:4px;"></i> Details
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            document.getElementById('cve-table-body').innerHTML = html;
+
+            // Check for search query in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const query = urlParams.get('q');
+            if (query) {
+                openModal(query);
+            }
+        });
+</script>
+{% endblock %}
+

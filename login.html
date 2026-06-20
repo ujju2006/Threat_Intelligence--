@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authenticate | ThreatFusion SOC</title>
+    
+    <!-- Google Fonts: Orbitron · Inter · Rajdhani -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/soc_theme.css') }}">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        /* login-container inherits glass-panel from soc_theme.css */
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 40px;
+            position: relative;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 35px;
+        }
+
+        .logo-box {
+            font-size: 42px;
+            color: var(--accent-blue);
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 10px var(--accent-blue));
+        }
+
+        .login-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        .login-subtitle {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-top: 5px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .form-group i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-subtle);
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 12px 12px 12px 42px;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .login-input:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1);
+        }
+
+        .login-input:focus + i {
+            color: var(--accent-blue);
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--accent-blue);
+            color: black;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+            box-shadow: 0 4px 15px rgba(56, 189, 248, 0.2);
+        }
+
+        .auth-btn:hover {
+            background: #0ea5e9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
+        }
+
+        .auth-btn:active {
+            transform: translateY(0);
+        }
+
+        .error-msg {
+            background: rgba(244, 63, 94, 0.1);
+            border: 1px solid var(--sev-critical);
+            color: var(--sev-critical);
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+        }
+        
+        .login-footer {
+            margin-top: 30px;
+            text-align: center;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 10px;
+            color: var(--text-subtle);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container glass-panel">
+        <div class="login-header">
+            <div class="logo-box">
+                <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div class="login-title glow-text">ThreatFusion</div>
+            <div class="login-subtitle">Enterprise Security Portal</div>
+        </div>
+        
+        {% if error %}
+            <div class="error-msg">
+                <i class="fa-solid fa-triangle-exclamation"></i> ACCESS DENIED: {{ error }}
+            </div>
+        {% endif %}
+
+        <form method="POST">
+            <div class="form-group">
+                <input type="text" name="username" class="login-input" placeholder="Credential Identifier" required autocomplete="off">
+                <i class="fa-solid fa-user-shield"></i>
+            </div>
+            <div class="form-group">
+                <input type="password" name="password" class="login-input" placeholder="Security Token" required>
+                <i class="fa-solid fa-key"></i>
+            </div>
+            <button type="submit" class="auth-btn">Initialize Connection</button>
+        </form>
+
+        <div class="login-footer">
+            <i class="fa-solid fa-circle" style="font-size:6px; color:var(--accent-green);"></i> SYSTEM STATUS: OPERATIONAL
+        </div>
+    </div>
+</body>
+</html>

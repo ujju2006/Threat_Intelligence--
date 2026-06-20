@@ -1,0 +1,20 @@
+[
+  {
+    "username": "admin",
+    "password_hash": "scrypt:32768:8:1$3Yh1N1YF1Vz2g9i5$79c74577887eeb4a86b7729f2bb406b72a0890250df7d5c589b91e92d718a22bc707bb09c68a4e8d3a146e2a233b2a26569ec1f99c150539665bc7ba97793d25",
+    "role": "Admin",
+    "cleartext_demo_password": "admin"
+  },
+  {
+    "username": "analyst1",
+    "password_hash": "scrypt:32768:8:1$3Yh1N1YF1Vz2g9i5$79c74577887eeb4a86b7729f2bb406b72a0890250df7d5c589b91e92d718a22bc707bb09c68a4e8d3a146e2a233b2a26569ec1f99c150539665bc7ba97793d25",
+    "role": "SOC Analyst",
+    "cleartext_demo_password": "admin"
+  },
+  {
+    "username": "hunter",
+    "password_hash": "scrypt:32768:8:1$3Yh1N1YF1Vz2g9i5$79c74577887eeb4a86b7729f2bb406b72a0890250df7d5c589b91e92d718a22bc707bb09c68a4e8d3a146e2a233b2a26569ec1f99c150539665bc7ba97793d25",
+    "role": "Threat Hunter",
+    "cleartext_demo_password": "admin"
+  }
+]

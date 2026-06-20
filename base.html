@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="ThreatFusion – Elite Security Operations Center Dashboard for real-time threat intelligence, IOC correlation, and CVE analysis.">
+    <title>ThreatFusion | {% block title %}{% endblock %}</title>
+
+    <!-- Google Fonts: Orbitron · Inter · Rajdhani -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Leaflet.js -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN2GQnc=" crossorigin=""></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- SOC Theme CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/soc_theme.css') }}">
+</head>
+<body>
+
+<!-- ═══════════════════════ SIDEBAR ═══════════════════════ -->
+<aside class="sidebar" id="sidebar">
+    <div class="brand glow-text">
+        <i class="fa-solid fa-shield-halved"></i> ThreatFusion
+    </div>
+
+    <div class="sidebar-section-label">Intelligence</div>
+    <ul class="sidebar-menu">
+        <li id="nav-dashboard">
+            <a href="{{ url_for('dashboard') }}">
+                <i class="fa-solid fa-chart-line"></i> SOC Dashboard
+            </a>
+        </li>
+        <li id="nav-ip">
+            <a href="{{ url_for('ip_analysis') }}">
+                <i class="fa-solid fa-network-wired"></i> IP Analysis
+            </a>
+        </li>
+        <li id="nav-url">
+            <a href="{{ url_for('url_analysis') }}">
+                <i class="fa-solid fa-link"></i> URL Analysis
+            </a>
+        </li>
+    </ul>
+
+    <div class="sidebar-sep"></div>
+    <div class="sidebar-section-label">Forensics</div>
+    <ul class="sidebar-menu">
+        <li id="nav-ioc">
+            <a href="{{ url_for('ioc_correlation') }}">
+                <i class="fa-solid fa-diagram-project"></i> IOC Correlation
+            </a>
+        </li>
+        <li id="nav-cve">
+            <a href="{{ url_for('cve_intelligence') }}">
+                <i class="fa-solid fa-bug"></i> CVE Intelligence
+            </a>
+        </li>
+    </ul>
+
+    <div class="sidebar-sep"></div>
+    <div class="sidebar-section-label">Reporting</div>
+    <ul class="sidebar-menu">
+        <li id="nav-exports">
+            <a href="{{ url_for('exports') }}">
+                <i class="fa-solid fa-file-export"></i> TI Exports & Blocklists
+            </a>
+        </li>
+    </ul>
+
+    <div class="user-info">
+        {% if role %}
+            <div style="display:flex;align-items:center;gap:8px;">
+                <i class="fa-solid fa-user" style="color:var(--accent-blue);"></i>
+                <span>{{ session['user'] }}</span>
+            </div>
+            <div style="color: var(--accent-purple); margin-top: 5px; font-family:'Rajdhani',sans-serif; font-size:11px; text-transform:uppercase; letter-spacing:1px;">
+                <i class="fa-solid fa-id-badge"></i> {{ role }}
+            </div>
+            <a href="{{ url_for('logout') }}"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>
+        {% endif %}
+    </div>
+</aside>
+
+<!-- ═══════════════════════ TOPBAR ════════════════════════ -->
+<header class="topbar">
+    <div class="topbar-left">
+        <!-- Live threat ticker -->
+        <span class="threat-ticker-label"><i class="fa-solid fa-rss"></i> Live Feed</span>
+        <div class="threat-ticker-wrap">
+            <div class="threat-ticker" id="threat-ticker">
+                &nbsp;&nbsp;&nbsp;
+                <span style="color:var(--sev-critical);">⚠ CRITICAL:</span> New C2 detected — <span>185.220.101.47</span> (Tor Exit Node) &nbsp;·&nbsp;
+                <span style="color:var(--sev-high);">HIGH:</span> CVE-2024-3400 exploit attempt blocked &nbsp;·&nbsp;
+                <span style="color:var(--accent-blue);">IOC MATCH:</span> Hash <span>a3f5c9d...</span> linked to LockBit ransomware &nbsp;·&nbsp;
+                <span style="color:var(--sev-medium);">MEDIUM:</span> Suspicious DNS query to <span>malicious-payload.ru</span> &nbsp;·&nbsp;
+                <span style="color:var(--accent-green);">SECURE:</span> Firewall rules updated — 4 new IOC signatures pushed &nbsp;·&nbsp;
+                <span style="color:var(--sev-critical);">⚠ CRITICAL:</span> New C2 detected — <span>185.220.101.47</span> (Tor Exit Node) &nbsp;·&nbsp;
+                <span style="color:var(--sev-high);">HIGH:</span> CVE-2024-3400 exploit attempt blocked &nbsp;·&nbsp;
+                <span style="color:var(--accent-blue);">IOC MATCH:</span> Hash <span>a3f5c9d...</span> linked to LockBit ransomware &nbsp;·&nbsp;
+                <span style="color:var(--sev-medium);">MEDIUM:</span> Suspicious DNS query to <span>malicious-payload.ru</span> &nbsp;·&nbsp;
+                <span style="color:var(--accent-green);">SECURE:</span> Firewall rules updated — 4 new IOC signatures pushed
+            </div>
+        </div>
+    </div>
+
+    <div class="topbar-right">
+        <!-- Search -->
+        <div class="search-wrap">
+            <i class="fa-solid fa-magnifying-glass search-icon"></i>
+            <input
+                type="text"
+                id="global-search"
+                placeholder="Search IOC / CVE / IP / Hash..."
+                autocomplete="off"
+            >
+            <div class="search-dropdown" id="search-dropdown"></div>
+        </div>
+
+        <!-- SOC Status -->
+        <div class="status-pill">
+            <i class="fa-solid fa-circle" style="font-size:7px;"></i>
+            SOC: SECURE
+        </div>
+
+        <!-- Clock -->
+        <div class="topbar-clock" id="topbar-clock">00:00:00</div>
+    </div>
+</header>
+
+<!-- ═══════════════════ MAIN CONTENT ══════════════════════ -->
+<main class="main-content">
+
+    <!-- Search results (appears below topbar, above content) -->
+    <div id="search-results" style="margin-bottom:16px;"></div>
+
+    {% block content %}{% endblock %}
+</main>
+
+
+<!-- ═══════════════════════ SCRIPTS ═══════════════════════ -->
+<script>
+    /* ── Real-time Clock ── */
+    function updateClock() {
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const time = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+        const date = now.toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' });
+        document.getElementById('topbar-clock').textContent = `${date}  ${time} UTC`;
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    /* ── Active Sidebar Link ── */
+    (function() {
+        const path = window.location.pathname;
+        const map = {
+            '/dashboard':       'nav-dashboard',
+            '/ip_analysis':     'nav-ip',
+            '/url_analysis':    'nav-url',
+            '/ioc_correlation': 'nav-ioc',
+            '/cve_intelligence':'nav-cve'
+        };
+        for (const [route, id] of Object.entries(map)) {
+            if (path.startsWith(route)) {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('active');
+            }
+        }
+    })();
+
+    /* ── Global Search with Dropdown ── */
+    const searchInput   = document.getElementById('global-search');
+    const searchDropdown = document.getElementById('search-dropdown');
+    const searchResults  = document.getElementById('search-results');
+
+    searchInput.addEventListener('input', function() {
+        const q = this.value.trim();
+        if (q.length > 2) {
+            fetch('/api/search?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.length) {
+                        searchDropdown.innerHTML = '<div class="search-dropdown-item" style="color:var(--text-muted);">No results found</div>';
+                        searchDropdown.classList.add('active');
+                        return;
+                    }
+                    let html = '';
+                    data.forEach(item => {
+                        let link = '#';
+                        if (item.type === 'IOC' && item.id.includes('IP'))  link = '/ip_analysis?ip=' + encodeURIComponent(item.value);
+                        else if (item.type === 'IOC' && item.id.includes('URL')) link = '/url_analysis?url=' + encodeURIComponent(item.value);
+                        else if (item.type === 'CVE') link = '/cve_intelligence?q=' + encodeURIComponent(item.id);
+
+                        html += `<a href="${link}" class="search-dropdown-item">
+                            <span class="badge ${item.severity.toLowerCase()}" style="margin-right:8px;">${item.severity}</span>
+                            <strong style="color:var(--text-main);">${item.type}</strong>
+                            <span style="color:var(--text-muted);margin:0 6px;">·</span>
+                            <span style="font-family:monospace;color:var(--accent-blue);font-size:12px;">${item.value}</span>
+                        </a>`;
+                    });
+                    searchDropdown.innerHTML = html;
+                    searchDropdown.classList.add('active');
+                })
+                .catch(() => {});
+        } else {
+            searchDropdown.classList.remove('active');
+            searchDropdown.innerHTML = '';
+        }
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.search-wrap')) {
+            searchDropdown.classList.remove('active');
+        }
+    });
+
+    /* ── Stagger animate glass panels on load ── */
+    window.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.glass-panel').forEach((el, i) => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(16px)';
+            el.style.transition = `opacity 0.5s ease ${i * 0.07}s, transform 0.5s ease ${i * 0.07}s`;
+            setTimeout(() => {
+                el.style.opacity = '1';
+                el.style.transform = 'translateY(0)';
+            }, 50);
+        });
+    });
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>
